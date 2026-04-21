@@ -345,6 +345,9 @@ Root `.gitignore` punya `*.csv` blanket ignore, tapi `unicode_translation.csv` (
 ### Global Python pollution saat Phase 0 testing (2026-04-21)
 Saat verifikasi credentials di Phase 0, beberapa library ke-install ke **global Python** sebelum venv aktif: `kaggle`, `wandb`, `huggingface_hub`, `protobuf`, `python-dotenv`. Not ideal tapi not critical — Phase 1+ semua install masuk ke `.venv` isolated. Global Python juga sudah punya `streamlit` dari project lain. **Known conflict**: `wandb` butuh `protobuf>=6.32.x,<7.0` (pinned), sempat bentrok saat install; resolved dengan upgrade explicit. Flag ini lagi kalau venv install bikin issue serupa.
 
+### CODH server outage — switched K49 download ke Kaggle mirror (2026-04-21)
+CODH (`codh.rois.ac.jp`), host resmi Kuzushiji-49 dataset, sudah down sejak **17 November 2025** untuk server migration dengan timeline "uncertain" per announcement di `codh.rois.ac.jp/index.html.en`. Per 21 April 2026 (5 bulan kemudian) server masih unreachable dari Indonesia — `Test-NetConnection` fail di port 80 dan 443, TCP handshake timeout. Spec project (Bagian D) masih reference direct download dari CODH via `requests`. **ACTION dilakukan**: refactor `ml/scripts/download_data.py` untuk pakai Kaggle dataset mirror `anokas/kuzushiji` (`https://www.kaggle.com/datasets/anokas/kuzushiji`) via `kaggle.api.dataset_download_files`. Dataset integrity verified: 4 K49 files (`k49-train-imgs.npz`, `k49-train-labels.npz`, `k49-test-imgs.npz`, `k49-test-labels.npz`) + `k49_classmap.csv`, total ~50 MB setelah prune K-MNIST arrays. Kaggle mirror tested OK — download 571 MB zip, extract + auto-prune K-MNIST, ~12 menit di bandwidth standard Indonesia. **Watch-list**: kalau CODH eventually back online, tidak perlu rollback — Kaggle mirror lebih reliable (Cloudflare CDN, 99.9% uptime). Kalau CODH permanent shutdown, attribution tetap ke Clanuwat et al. 2018 + note mirror source.
+
 ---
 
 ## Priority Phases
