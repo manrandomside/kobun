@@ -192,7 +192,7 @@ kobun/
 
 ### [P1] Classification (Week 1-2)
 
-- [ ] `ml/src/data/datasets.py` — KuzushijiDataset class with augmentation
+- [x] `ml/src/data/datasets.py` — KuzushijiDataset class with augmentation
 - [ ] `ml/src/data/transforms.py` — Augmentation pipeline (rotation, erasing, mixup)
 - [ ] `ml/src/models/classifier.py` — ResNet/ViT wrapper via timm
 - [ ] `ml/src/training/trainer.py` — Training loop with W&B integration
@@ -200,7 +200,7 @@ kobun/
 - [ ] `ml/src/evaluation/metrics.py` — Balanced accuracy, confusion matrix
 - [ ] `ml/src/utils/config.py` — YAML config loader
 - [ ] `ml/src/train.py` — CLI entry point
-- [ ] `ml/scripts/download_data.py` — Kaggle API dataset downloader
+- [x] `ml/scripts/download_data.py` — Kaggle API dataset downloader
 - [ ] `ml/configs/baseline-cnn.yaml`, `resnet50-baseline.yaml`, `vit-base.yaml`
 - [ ] `ml/notebooks/01_eda.ipynb` — Class distribution, sample viz, imbalance
 - [ ] Train baseline CNN (sanity check)
