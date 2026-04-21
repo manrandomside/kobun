@@ -1,0 +1,62 @@
+# Data
+ml/data/
+*.csv
+*.npy
+*.npz
+*.h5
+*.parquet
+# Carve-out: small reference CSVs needed at inference time
+   !ml/configs/unicode_translation.csv
+
+# Models / ML artifacts
+*.pt
+*.pth
+*.onnx
+checkpoints/
+wandb/
+runs/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.venv/
+venv/
+env/
+.ipynb_checkpoints/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Node / Next.js
+node_modules/
+.next/
+.turbo/
+dist/
+build/
+out/
+.pnpm-store/
+coverage/
+
+# Secrets
+.env
+.env.local
+.env.*.local
+*.key
+kaggle.json
+service-account.json
+
+# OS
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.claude/
