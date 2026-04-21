@@ -1,0 +1,13 @@
+# Pulls in all production deps
+-r requirements.txt
+
+# Notebooks
+jupyter>=1.1
+ipykernel>=6.29
+
+# Testing
+pytest>=8.3
+
+# Lint & format
+ruff>=0.7
+black>=24.10

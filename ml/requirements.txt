@@ -1,0 +1,30 @@
+# Deep learning
+torch>=2.5,<3.0
+torchvision>=0.20,<1.0
+timm>=1.0,<2.0
+
+# Augmentations & computer vision
+albumentations>=1.4,<2.0
+opencv-python>=4.10
+Pillow>=11.0
+
+# Numerics & tabular
+numpy>=2.0,<3.0
+pandas>=2.2
+pyyaml>=6.0
+
+# Metrics
+scikit-learn>=1.6
+
+# Experiment tracking & data platform clients
+wandb>=0.18
+kaggle>=1.6
+huggingface_hub>=0.26
+
+# Environment
+python-dotenv>=1.0
+
+# Visualization & progress
+matplotlib>=3.9
+seaborn>=0.13
+tqdm>=4.66
