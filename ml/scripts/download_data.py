@@ -1,12 +1,20 @@
 """Download Kuzushiji datasets for Phase 1 classification and Phase 2 detection.
 
-The classification corpus (Kuzushiji-49) is fetched from the CODH public mirror
-as four NumPy `.npz` files. The detection corpus is the 2019 Kaggle
-"Kuzushiji Recognition" competition, retrieved via the Kaggle API and requires
-a valid `~/.kaggle/kaggle.json` with competition rules accepted for the
-authenticated user.
+The classification corpus (Kuzushiji-49) is fetched from the Kaggle dataset
+mirror ``anokas/kuzushiji``, which bundles the official CODH K49 release
+alongside Kuzushiji-MNIST. We switched to this mirror after the upstream CODH
+server ``codh.rois.ac.jp`` went offline in November 2025 for a migration
+whose timeline is still unresolved as of April 2026. Attribution and the
+original license (CC BY-SA 4.0, Clanuwat et al. 2018) are unaffected —
+``anokas/kuzushiji`` is a byte-identical mirror of the official release.
 
-Archives are written as-is; extraction is deferred to the preprocessing layer.
+The detection corpus is the 2019 Kaggle "Kuzushiji Recognition" competition.
+Both paths authenticate against ``~/.kaggle/kaggle.json`` and require that the
+authenticated user has accepted the respective dataset / competition terms.
+
+The K49 archive is auto-extracted and the bundled K-MNIST arrays are pruned,
+since this project trains only on K49. The detection archive is left as a zip
+and extracted later by the preprocessing layer.
 
 Usage:
     python ml/scripts/download_data.py --dataset classification
@@ -20,31 +28,32 @@ from __future__ import annotations
 import argparse
 import sys
 from pathlib import Path
-from typing import Iterable
-
-import requests
-from tqdm import tqdm
+from typing import Any, Iterable
 
 
-CODH_BASE_URL = "http://codh.rois.ac.jp/kmnist/dataset/k49"
-K49_FILES: tuple[str, ...] = (
+KAGGLE_DATASET_CLASSIFICATION = "anokas/kuzushiji"
+KAGGLE_COMPETITION_DETECTION = "kuzushiji-recognition"
+
+CLASSIFICATION_SUBDIR = "kuzushiji-49"
+DETECTION_SUBDIR = "kuzushiji-recognition"
+
+K49_REQUIRED_FILES: tuple[str, ...] = (
     "k49-train-imgs.npz",
     "k49-train-labels.npz",
     "k49-test-imgs.npz",
     "k49-test-labels.npz",
 )
 
-KAGGLE_COMPETITION = "kuzushiji-recognition"
-
-CLASSIFICATION_SUBDIR = "kuzushiji-49"
-DETECTION_SUBDIR = "kuzushiji-recognition"
+KMNIST_FILES_TO_DELETE: tuple[str, ...] = (
+    "kmnist-train-imgs.npz",
+    "kmnist-train-labels.npz",
+    "kmnist-test-imgs.npz",
+    "kmnist-test-labels.npz",
+)
 
 # Default data root sits next to this script's ml/ parent so that running the
 # script from any CWD still writes into <repo>/ml/data/.
 DEFAULT_DATA_DIR = Path(__file__).resolve().parents[1] / "data"
-
-CHUNK_BYTES = 1 << 15
-HTTP_TIMEOUT_SECONDS = 30
 
 
 def _verify(path: Path) -> bool:
@@ -52,85 +61,104 @@ def _verify(path: Path) -> bool:
     return path.is_file() and path.stat().st_size > 0
 
 
-def _download_file(url: str, dest: Path) -> None:
-    """Stream a single URL to ``dest`` with a tqdm progress bar.
+def _authenticated_kaggle_api() -> Any:
+    """Import the ``kaggle`` client and authenticate it, or fail with guidance.
 
-    The response body is written to ``<dest>.part`` first and renamed on
-    success, so an interrupted run never leaves a zero-length ``dest`` that
-    later looks complete to the skip-if-present check.
+    Kept as a helper so the import cost (and the config-file read that the
+    Kaggle client performs at auth time) is paid only when a dataset path is
+    actually invoked. ``--help`` never triggers it.
 
-    Args:
-        url: Absolute URL to fetch.
-        dest: Final destination path on disk.
+    Returns:
+        The authenticated ``kaggle.api`` singleton.
 
     Raises:
-        requests.RequestException: If any transport-level error occurs.
+        SystemExit: If the package is missing or credentials are invalid.
     """
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    tmp = dest.with_suffix(dest.suffix + ".part")
-    with requests.get(url, stream=True, timeout=HTTP_TIMEOUT_SECONDS) as response:
-        response.raise_for_status()
-        total = int(response.headers.get("content-length", 0))
-        with (
-            tmp.open("wb") as file_handle,
-            tqdm(
-                total=total or None,
-                unit="B",
-                unit_scale=True,
-                unit_divisor=1024,
-                desc=dest.name,
-                leave=False,
-            ) as progress,
-        ):
-            for chunk in response.iter_content(chunk_size=CHUNK_BYTES):
-                if not chunk:
-                    continue
-                file_handle.write(chunk)
-                progress.update(len(chunk))
-    tmp.replace(dest)
+    try:
+        from kaggle import api as kaggle_api
+    except ImportError as exc:
+        raise SystemExit(
+            "`kaggle` package not installed. "
+            "Run `pip install -r ml/requirements.txt` inside the project venv."
+        ) from exc
+
+    try:
+        kaggle_api.authenticate()
+    except Exception as exc:
+        raise SystemExit(
+            "Kaggle authentication failed. "
+            "Place a valid API token at `~/.kaggle/kaggle.json` "
+            "(chmod 600 on *nix, restrict ACLs on Windows). "
+            "Regenerate at https://www.kaggle.com/settings."
+        ) from exc
+
+    return kaggle_api
 
 
 def download_classification(data_dir: Path, force: bool) -> None:
-    """Download the Kuzushiji-49 classification arrays from CODH.
+    """Download Kuzushiji-49 arrays via the Kaggle ``anokas/kuzushiji`` mirror.
+
+    The mirror bundles both Kuzushiji-MNIST (10 classes) and Kuzushiji-49
+    (49 classes). After auto-extract we prune the K-MNIST ``.npz`` arrays;
+    the ``*_classmap.csv`` files are small and harmless, so they are kept.
 
     Args:
         data_dir: Root data directory. Files are written to
             ``<data_dir>/kuzushiji-49/``.
-        force: If True, redownload files even when already present.
+        force: If True, redownload and re-extract even when files are present.
 
     Raises:
-        SystemExit: On network failure or integrity check failure.
+        SystemExit: On download, extraction, or integrity check failure.
     """
     target_dir = data_dir / CLASSIFICATION_SUBDIR
     target_dir.mkdir(parents=True, exist_ok=True)
     print(f"[classification] target: {target_dir}")
 
-    for filename in K49_FILES:
-        dest = target_dir / filename
-        if _verify(dest) and not force:
-            print(f"[classification] skip {filename} (already present)")
-            continue
-        url = f"{CODH_BASE_URL}/{filename}"
-        print(f"[classification] fetch {url}")
-        try:
-            _download_file(url, dest)
-        except requests.RequestException as exc:
-            raise SystemExit(
-                f"[classification] download failed for {url}: {exc}"
-            ) from exc
-        if not _verify(dest):
-            raise SystemExit(
-                f"[classification] integrity check failed for {dest}"
-            )
-    print("[classification] done")
+    expected = [target_dir / name for name in K49_REQUIRED_FILES]
+    if all(_verify(p) for p in expected) and not force:
+        print(
+            "[classification] skip (all 4 K49 .npz files already present; "
+            "use --force to redownload)"
+        )
+        return
+
+    kaggle_api = _authenticated_kaggle_api()
+
+    print(
+        f"[classification] fetch Kaggle dataset "
+        f"'{KAGGLE_DATASET_CLASSIFICATION}' (K49 + K-MNIST mirror)"
+    )
+    try:
+        kaggle_api.dataset_download_files(
+            KAGGLE_DATASET_CLASSIFICATION,
+            path=str(target_dir),
+            unzip=True,
+            force=force,
+            quiet=False,
+        )
+    except Exception as exc:
+        raise SystemExit(
+            f"[classification] Kaggle download failed: {exc}. "
+            "Confirm the dataset is accessible at "
+            f"https://www.kaggle.com/datasets/{KAGGLE_DATASET_CLASSIFICATION}."
+        ) from exc
+
+    for name in KMNIST_FILES_TO_DELETE:
+        stray = target_dir / name
+        if stray.exists():
+            stray.unlink()
+            print(f"[classification] pruned {name}")
+
+    missing = [p.name for p in expected if not _verify(p)]
+    if missing:
+        raise SystemExit(
+            f"[classification] integrity check failed — missing/empty: {missing}"
+        )
+    print(f"[classification] done ({len(expected)} K49 file(s) in {target_dir})")
 
 
 def download_detection(data_dir: Path, force: bool) -> None:
     """Download the Kaggle Kuzushiji Recognition competition archive.
-
-    Delegates to the official ``kaggle`` Python client. The client is imported
-    lazily so that ``--dataset classification`` never pays its import or
-    auth-loading cost.
 
     Args:
         data_dir: Root data directory. Files are written to
@@ -153,28 +181,15 @@ def download_detection(data_dir: Path, force: bool) -> None:
             )
             return
 
-    try:
-        from kaggle import api as kaggle_api
-    except ImportError as exc:
-        raise SystemExit(
-            "[detection] `kaggle` package not installed. "
-            "Run `pip install -r ml/requirements.txt` inside the project venv."
-        ) from exc
+    kaggle_api = _authenticated_kaggle_api()
 
-    try:
-        kaggle_api.authenticate()
-    except Exception as exc:
-        raise SystemExit(
-            "[detection] Kaggle authentication failed. "
-            "Place a valid API token at `~/.kaggle/kaggle.json` "
-            "(chmod 600 on *nix, restrict ACLs on Windows). "
-            "Regenerate at https://www.kaggle.com/settings."
-        ) from exc
-
-    print(f"[detection] fetch competition '{KAGGLE_COMPETITION}' via Kaggle API")
+    print(
+        f"[detection] fetch competition '{KAGGLE_COMPETITION_DETECTION}' "
+        "via Kaggle API"
+    )
     try:
         kaggle_api.competition_download_files(
-            KAGGLE_COMPETITION,
+            KAGGLE_COMPETITION_DETECTION,
             path=str(target_dir),
             quiet=False,
             force=force,
@@ -183,7 +198,7 @@ def download_detection(data_dir: Path, force: bool) -> None:
         raise SystemExit(
             f"[detection] Kaggle download failed: {exc}. "
             "Confirm you have accepted the competition rules at "
-            f"https://www.kaggle.com/competitions/{KAGGLE_COMPETITION}/rules."
+            f"https://www.kaggle.com/competitions/{KAGGLE_COMPETITION_DETECTION}/rules."
         ) from exc
 
     downloaded = [p for p in target_dir.iterdir() if p.is_file()]
@@ -196,8 +211,8 @@ def _parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="download_data",
         description=(
-            "Download Kuzushiji datasets: K49 classification (CODH) and/or "
-            "Kuzushiji Recognition detection (Kaggle competition)."
+            "Download Kuzushiji datasets: K49 classification (Kaggle mirror) "
+            "and/or Kuzushiji Recognition detection (Kaggle competition)."
         ),
     )
     parser.add_argument(
