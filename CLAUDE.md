@@ -176,19 +176,19 @@ kobun/
 
 ## Status Progress (Diupdate Berkala)
 
-### [P0] Manual Setup & Foundation
+### [P0] Manual Setup & Foundation — DONE (2026-04-21)
 
-- [ ] Kaggle account + API key (`kaggle.json` at `~/.kaggle/`)
-- [ ] Weights & Biases account + API key + create project `kobun-classification`
-- [ ] HuggingFace account + write token
-- [ ] Create HF Hub repos: 4 model repos (baseline, resnet50, vit, yolov8)
-- [ ] Gemini API key dari Google AI Studio
-- [ ] GitHub repo `kobun` (monorepo)
-- [ ] Vercel account + connect GitHub
-- [ ] Local environment: Python 3.10+, Node.js 20+, pnpm, git, VS Code + extensions
-- [ ] Virtual env + `.env` populated
-- [ ] Initial monorepo structure (apps/, ml/, .github/)
-- [ ] Initial commit: README draft + LICENSE + .gitignore + folder skeleton
+- [x] Kaggle account + API key (`kaggle.json` at `~/.kaggle/`) — user `firmanfadilah`, verified via `kaggle datasets list`
+- [x] Weights & Biases account + API key + create project `kobun-classification` — entity `firmanfadilah-universitas-udayana`, Academic Pro plan, logged in via wandb CLI
+- [x] HuggingFace account + write token — user `firmanfadilah`, token name `kobun-ml`, logged in via `hf auth login`
+- [x] Create HF Hub repos: 4 model repos (baseline, resnet50, vit, yolov8) — `kobun-classifier-baseline-cnn`, `kobun-classifier-resnet50`, `kobun-classifier-vit`, `kobun-detector-yolov8`, all Private (flip to Public in Phase 5)
+- [x] Gemini API key dari Google AI Studio — key name "Kobun" under project "Default Gemini Project", tested OK
+- [x] GitHub repo `kobun` (monorepo) — `manrandomside/kobun`, Public
+- [x] Vercel account + connect GitHub — pre-existing `manrandomside`, Hobby plan, GitHub integrated
+- [x] Local environment: Python 3.10+, Node.js 20+, pnpm, git, VS Code + extensions — Python 3.13.3, Node 22.16, pnpm 10.33, git 2.53, VS Code + Python/Pylance/Jupyter/Ruff/ESLint/Prettier/Tailwind
+- [x] Virtual env + `.env` populated — `.venv` active at repo root with `python-dotenv`; `.env` filled with 5 real credentials and verified load
+- [x] Initial monorepo structure (apps/, ml/, .github/) — skeleton with `.gitkeep` files per spec Bagian C
+- [x] Initial commit: README draft + LICENSE + .gitignore + folder skeleton — commit `7ef4e5d`, pushed to `origin/main`
 
 ### [P1] Classification (Week 1-2)
 
@@ -324,7 +324,26 @@ kobun/
 
 ## Catatan Teknis (Diupdate Seiring Development)
 
-_Belum ada catatan. Akan diisi saat implementasi berjalan dan ada keputusan teknis yang perlu didokumentasikan._
+### Python version: 3.13.3 (2026-04-21)
+Global dan venv pakai Python 3.13.3. Spec minta 3.10+, jadi masih in-scope, tapi 3.13 relatively new di ecosystem ML. Fallback ready: Python 3.10 tersedia di `C:\laragon\bin\python\python-3.10\` kalau ada library breaking di 3.13. **Watch-list untuk Phase 1**: PyTorch 2.x, ONNX, Ultralytics — pantau wheel availability dan any runtime warnings. Kalau ada friction, switch venv ke 3.10 tanpa ubah code.
+
+### Username split: `manrandomside` (GitHub/Vercel) vs `firmanfadilah` (Kaggle/W&B/HF) (2026-04-21)
+GitHub tetap `manrandomside` (not renamed), tapi account Kaggle/W&B/HuggingFace dibikin baru dengan handle `firmanfadilah` untuk branding akademik. Konsekuensi: URL akan mixed — `github.com/manrandomside/kobun`, `kobun-manrandomside.vercel.app`, `huggingface.co/firmanfadilah/kobun-*`, `wandb.ai/firmanfadilah-universitas-udayana/*`. **Action di Phase 5**: README umbrella harus eksplisit attribution — satu orang, dua handle, alasannya historical.
+
+### W&B Academic Pro plan — no "Public" visibility (2026-04-21)
+Academic Pro approved instant via email `@student.unud.ac.id` (Universitas Udayana). Benefits: unlimited tracked hours, 200GB storage, no seat limit. **Caveat**: project visibility pilihan hanya `Team` atau `Restricted` — **tidak ada `Public`** di academic tier. Strategi portfolio sharing di Phase 5: pakai **W&B Reports** (public URL) yang curate hasil tanpa expose full project dashboard/runs.
+
+### Gemini SDK: `google-generativeai` DEPRECATED, pakai `google-genai` (2026-04-21)
+Per April 2026 Google sudah deprecate library `google-generativeai` dan migrasi ke `google-genai` (unified SDK untuk Gemini API + Vertex AI). **Spec project masih reference library lama** (Bagian L / ml pipeline). **ACTION Phase 2**: implement `ml/src/pipeline/translation.py` langsung pakai `google-genai` (import `from google import genai`), bukan `google.generativeai`. Update spec + `ml/requirements.txt` saat touch.
+
+### HuggingFace CLI: `huggingface-cli` → `hf` (2026-04-21)
+Command lama `huggingface-cli` deprecated di `huggingface_hub` v1.11.0+. Semua workflow pakai `hf` executable: `hf auth login`, `hf auth whoami`, `hf upload`, `hf repo create`, `hf download`. **ACTION saat next touch spec Bagian L #3** (Manual Process Guide): ganti semua reference `huggingface-cli` → `hf`. Makefile targets (`make deploy-space` dll) juga harus pakai `hf`.
+
+### .gitignore carve-out: `!ml/configs/unicode_translation.csv` (2026-04-21)
+Root `.gitignore` punya `*.csv` blanket ignore, tapi `unicode_translation.csv` (kuzushiji Unicode → modern hiragana mapping dari CODH) adalah **reference table yang harus di-commit** — ini bukan training data, ukurannya kecil, dan pipeline inference bergantung padanya. Carve-out `!ml/configs/unicode_translation.csv` sudah aktif di `.gitignore`. **File belum ada** — akan di-download dan committed di Phase 2 (saat setup translation pipeline).
+
+### Global Python pollution saat Phase 0 testing (2026-04-21)
+Saat verifikasi credentials di Phase 0, beberapa library ke-install ke **global Python** sebelum venv aktif: `kaggle`, `wandb`, `huggingface_hub`, `protobuf`, `python-dotenv`. Not ideal tapi not critical — Phase 1+ semua install masuk ke `.venv` isolated. Global Python juga sudah punya `streamlit` dari project lain. **Known conflict**: `wandb` butuh `protobuf>=6.32.x,<7.0` (pinned), sempat bentrok saat install; resolved dengan upgrade explicit. Flag ini lagi kalau venv install bikin issue serupa.
 
 ---
 
