@@ -193,7 +193,7 @@ kobun/
 ### [P1] Classification (Week 1-2)
 
 - [x] `ml/src/data/datasets.py` — KuzushijiDataset class with augmentation
-- [ ] `ml/src/data/transforms.py` — Augmentation pipeline (rotation, erasing, mixup)
+- [x] `ml/src/data/transforms.py` — Augmentation pipeline (rotation, erasing, mixup)
 - [ ] `ml/src/models/classifier.py` — ResNet/ViT wrapper via timm
 - [ ] `ml/src/training/trainer.py` — Training loop with W&B integration
 - [ ] `ml/src/training/losses.py` — Class-weighted, mixup, label smoothing
