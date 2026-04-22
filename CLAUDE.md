@@ -196,7 +196,7 @@ kobun/
 - [x] `ml/src/data/transforms.py` — Augmentation pipeline (rotation, erasing, mixup)
 - [x] `ml/src/models/classifier.py` — ResNet/ViT wrapper via timm
 - [ ] `ml/src/training/trainer.py` — Training loop with W&B integration
-- [ ] `ml/src/training/losses.py` — Class-weighted, mixup, label smoothing
+- [x] `ml/src/training/losses.py` — Class-weighted, mixup, label smoothing
 - [ ] `ml/src/evaluation/metrics.py` — Balanced accuracy, confusion matrix
 - [ ] `ml/src/utils/config.py` — YAML config loader
 - [ ] `ml/src/train.py` — CLI entry point
