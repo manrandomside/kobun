@@ -1,0 +1,58 @@
+model:
+  name: resnet50
+  pretrained: true
+  num_classes: 49
+  in_channels: 3
+  drop_rate: 0.1
+
+data:
+  dataset: kuzushiji49
+  data_dir: ml/data/kuzushiji-49
+  image_size: 28
+  channels: 3
+  batch_size: 128
+  num_workers: 4
+  val_fraction: 0.15
+  seed: 42
+  augmentations:
+    random_rotation_deg: 10.0
+    random_erasing_prob: 0.25
+    mixup_alpha: 0.2
+
+training:
+  epochs: 50
+  optimizer:
+    name: adamw
+    lr: 1.0e-3
+    weight_decay: 1.0e-4
+    momentum: 0.9
+  scheduler:
+    name: cosine
+    warmup_epochs: 3
+    min_lr: 1.0e-6
+    step_size: 30
+    gamma: 0.1
+  loss:
+    type: soft_ce
+    label_smoothing: 0.1
+    class_weight_scheme: inverse_sqrt
+  gradient_clip_norm: 1.0
+  mixed_precision: true
+  early_stopping_patience: 10
+
+evaluation:
+  metric: balanced_accuracy
+  test_time_augmentation: false
+  eval_every_n_epochs: 1
+
+logging:
+  wandb_project: kobun-classification
+  wandb_entity: null
+  wandb_run_name: resnet50_baseline
+  wandb_tags:
+    - resnet50
+    - phase1
+    - pretrained
+  save_top_k: 3
+  checkpoint_dir: ./checkpoints
+  hf_hub_repo: firmanfadilah/kobun-classifier-resnet50

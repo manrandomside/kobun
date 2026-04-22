@@ -201,7 +201,7 @@ kobun/
 - [x] `ml/src/utils/config.py` — YAML config loader
 - [x] `ml/src/train.py` — CLI entry point
 - [x] `ml/scripts/download_data.py` — Kaggle API dataset downloader
-- [ ] `ml/configs/baseline-cnn.yaml`, `resnet50-baseline.yaml`, `vit-base.yaml`
+- [x] `ml/configs/baseline-cnn.yaml`, `resnet50-baseline.yaml`, `vit-base.yaml`
 - [ ] `ml/notebooks/01_eda.ipynb` — Class distribution, sample viz, imbalance
 - [ ] Train baseline CNN (sanity check)
 - [ ] Train ResNet-50 with full augmentations (target >96%)
