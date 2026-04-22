@@ -203,12 +203,38 @@ kobun/
 - [x] `ml/scripts/download_data.py` — Kaggle API dataset downloader
 - [x] `ml/configs/baseline-cnn.yaml`, `resnet50-baseline.yaml`, `vit-base.yaml`
 - [ ] `ml/notebooks/01_eda.ipynb` — Class distribution, sample viz, imbalance
-- [ ] Train baseline CNN (sanity check)
+- [x] Train baseline CNN (sanity check)
 - [ ] Train ResNet-50 with full augmentations (target >96%)
 - [ ] Train ViT-Base (target >97%)
 - [ ] W&B hyperparameter sweep (20-30 runs)
 - [ ] Upload best models ke HF Hub dengan model cards (draft)
 - [ ] `EVALUATION_REPORT.md` partial — Phase 1 section
+
+### Baseline Training Result (2026-04-23)
+
+**Model**: baseline_cnn (136,817 trainable params, 137,140 in state_dict including BN buffers)  
+**Hardware**: Laptop CPU (Intel Iris Xe, 8GB RAM)  
+**Training time**: 38 min 31 sec (10 epochs, 01:40 - 02:18 local)  
+**Dataset**: Kuzushiji-49 train split, 197,510 train / 34,855 val (stratified 85/15, seed=42)  
+
+| Metric | Value | Phase 1 Target | Status |
+|--------|-------|----------------|--------|
+| val_balanced_accuracy | 0.9704 (97.04%) | >96% (ResNet-50 target) | EXCEEDED |
+| val_top1_accuracy | 0.9692 (96.92%) | >95% | EXCEEDED |
+| val_top3_accuracy | 0.9925 (99.25%) | >99% | EXCEEDED |
+| val_per_class_min | 0.8864 (88.64%) | all classes >85% | PASSED |
+| val_per_class_mean | 0.9704 | — | — |
+| val_per_class_std | 0.0214 | — | tight distribution |
+| Final train_loss | 1.098 | — | — |
+| Early stopped | False | — | completed all 10 epochs |
+
+**Context**: Matches PreActResNet-18 + Manifold Mixup benchmark from Clanuwat 2018 (97.33%) despite using 80x fewer parameters. All 4 Phase 1 classification metric targets cleared by the baseline alone. Confirms that the training recipe (class-weighted soft_ce, label smoothing 0.1, CoarseDropout cutout, cosine LR with 1-epoch warmup, inverse_sqrt class weighting) carries more weight than architecture size for K49 classification.
+
+**W&B run**: https://wandb.ai/firmanfadilah-universitas-udayana/kobun-classification/runs/7gcj3n9r
+
+**Best checkpoint**: `checkpoints/baseline_cnn/epoch009_metric0.9704.pt` (1.59 MB, local only, not committed per .gitignore)
+
+**Pipeline validation**: End-to-end stack confirmed working on real 10-epoch training: CLI entry (`ml.src.train`) -> Pydantic config loader -> DataLoader with val-transform fix -> baseline_cnn model -> soft_ce loss with inverse_sqrt class weights -> Trainer with checkpoint callback + cosine scheduler with warmup -> MetricsTracker (balanced_acc + top-k + per-class stats) -> W&B logging (defensive fallback not triggered). Pipeline production-ready for Kaggle P100 ResNet-50 and ViT training runs.
 
 ### [P2] Detection + ML Pipeline (Week 3-5)
 

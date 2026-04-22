@@ -60,3 +60,16 @@ Desktop.ini
 *.swo
 *~
 .claude/
+
+# ML training artifacts
+checkpoints/
+wandb/
+training-*log*.txt
+*.log
+
+# Model weights (use HF Hub instead)
+*.pt
+*.pth
+*.onnx
+*.safetensors
+
