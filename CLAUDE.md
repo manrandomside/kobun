@@ -199,7 +199,7 @@ kobun/
 - [x] `ml/src/training/losses.py` — Class-weighted, mixup, label smoothing
 - [x] `ml/src/evaluation/metrics.py` — Balanced accuracy, confusion matrix
 - [x] `ml/src/utils/config.py` — YAML config loader
-- [ ] `ml/src/train.py` — CLI entry point
+- [x] `ml/src/train.py` — CLI entry point
 - [x] `ml/scripts/download_data.py` — Kaggle API dataset downloader
 - [ ] `ml/configs/baseline-cnn.yaml`, `resnet50-baseline.yaml`, `vit-base.yaml`
 - [ ] `ml/notebooks/01_eda.ipynb` — Class distribution, sample viz, imbalance
