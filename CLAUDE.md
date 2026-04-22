@@ -194,7 +194,7 @@ kobun/
 
 - [x] `ml/src/data/datasets.py` — KuzushijiDataset class with augmentation
 - [x] `ml/src/data/transforms.py` — Augmentation pipeline (rotation, erasing, mixup)
-- [ ] `ml/src/models/classifier.py` — ResNet/ViT wrapper via timm
+- [x] `ml/src/models/classifier.py` — ResNet/ViT wrapper via timm
 - [ ] `ml/src/training/trainer.py` — Training loop with W&B integration
 - [ ] `ml/src/training/losses.py` — Class-weighted, mixup, label smoothing
 - [ ] `ml/src/evaluation/metrics.py` — Balanced accuracy, confusion matrix
